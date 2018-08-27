@@ -6,8 +6,13 @@ var assert = require('assert'),
 
 document = jsdom.getDocument(),
 document.__ENV__ = "testing",
-window = jsdom.getWindow();
-window.location.href = "http://ourlocaldomain:1000";
+windowmock = jsdom.getWindow();
+window = {
+	location: {
+		host: "localpath:1000"
+	}
+};
+Image = windowmock.Image;
 injected = rewire("./injected.js");
 
 function setDomain(d){
@@ -42,8 +47,9 @@ describe('Tent Router', function() {
 		url = cacheUrl(domain+"/hey");
 		assert.equal("/cache/"+domain+"/hey", url);
 		//except with localhost, we don't count that
-		domain = window.location.href;
-		url = cacheUrl(domain+"/hey");
+		url = cacheUrl("http://"+window.location.host+"/hey");
+		assert.equal("/cache/www.thisisthedomain.com/hey", url);
+		url = cacheUrl("https://"+window.location.host+"/hey");
 		assert.equal("/cache/www.thisisthedomain.com/hey", url);
 	});
 });

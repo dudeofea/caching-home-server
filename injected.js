@@ -1,6 +1,6 @@
 var domain = "https://www.google.com/";
 //For catching "new Image().src =" calls
-const NativeImage = window.Image;
+const NativeImage = Image;
 class FakeImage {
 	constructor(w, h) {
 		const nativeImage = new NativeImage(w, h);
@@ -50,10 +50,14 @@ function cacheUrl(url){
 	if(url === null || typeof url !== "string" || url === ""){
 		return;
 	}
+	//remove local domain if we find one
+	var ind = url.indexOf(window.location.host);
+	if(ind > -1){
+		url = url.substring(ind+window.location.host.length);
+	}
 	//detect if url has a domain
 	var absolute;
 	if (url.match(/https?:\/\//g)) {
-		//TODO: detect if domain is domain of this page
 		absolute = url;
 	}else{
 		absolute = domain + url;

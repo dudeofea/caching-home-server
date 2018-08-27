@@ -1,6 +1,7 @@
 from flask import Flask, send_file, request
 from bs4 import BeautifulSoup
 import urllib2
+import urlparse
 import re
 import os
 
@@ -12,8 +13,11 @@ def hello():
 
 @app.route('/view/<path:subpath>')
 def view_page(subpath):
-	response = dlurl(subpath)
-	html = response.read()
+	htmlfile, found = _check_cache(subpath, False)
+	with open(htmlfile, 'r') as myfile:
+		html = myfile.read()
+	if found:
+		return html
 	#redirect css url() links to cache
 	html = re.sub(r'url\(([^\)]*)\)', lambda m: "url(/cache/" + str(subpath) + m.group(1) + ")", html)
 	soup = BeautifulSoup(html, "lxml")
@@ -41,20 +45,35 @@ def view_page(subpath):
 	with open("injected.js") as f:
 		script.string = f.read()
 	soup.head.insert(0, script)
+	#write file to cache
+	with open(htmlfile, 'w') as myfile:
+		myfile.write(str(soup))
 	return str(soup)
 
 @app.route('/cache/<path:subpath>')
 def check_cache(subpath):
-	local_path = "cache/" + os.path.basename(subpath)
-	#useful later on
+	local_path, _ = _check_cache(subpath, False)
+	return send_file(local_path)
+
+def _check_cache(subpath, purge):
+	#parse the url
+	parsed = urlparse.urlparse(subpath)
+	print "subpath: ", parsed
+	if parsed.path != "/" and parsed.path != "":
+		local_path = "cache/" + parsed.netloc + parsed.path
+	else:
+		local_path = "cache/" + parsed.netloc + "/index"
+	#check if it's in the cache
+	found = True
 	if not os.path.exists(local_path):
 		folders = "/".join(local_path.split("/")[:-1])
 		if not os.path.exists(folders):
 			os.makedirs(folders)
-	#download the file and serve
-	dlfile(subpath, local_path)
+		#download the file and serve
+		dlfile(subpath, local_path)
+		found = False
 	print "serving: " + local_path
-	return send_file(local_path)
+	return local_path, found
 
 def dlfile(url, path):
 	# Open the url
