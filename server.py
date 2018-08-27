@@ -19,7 +19,19 @@ def view_page(subpath):
 	soup = BeautifulSoup(html, "lxml")
 	#redirect image links to cache
 	for link in soup.findAll('img'):
-		link['src'] = "/cache/"+subpath+"/"+link['src']
+		src = link.get('src')
+		if src:
+			link['src'] = "/cache/"+subpath+"/"+src
+		srcset = link.get('srcset')
+		if srcset:
+			links = link['srcset'].split(",")
+			new = []
+			for l in links:
+				l = l.strip()
+				split = l.split(" ")
+				split[0] = "/cache/"+subpath+"/"+split[0]
+				new.append(" ".join(split))
+			link['srcset'] = ", ".join(new)
 	#redirect script links to cache
 	for link in soup.findAll('script'):
 		if 'src' in link:
