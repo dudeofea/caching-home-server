@@ -14,10 +14,16 @@ def hello():
 def view_page(subpath):
 	response = urllib2.urlopen(subpath)
 	html = response.read()
-	#print html
-	soup = BeautifulSoup(html)
+	#redirect css url() links to cache
+	html = re.sub(r'url\(([^\)]*)\)', lambda m: "url(/cache/" + str(subpath) + m.group(1) + ")", html)
+	soup = BeautifulSoup(html, "lxml")
+	#redirect image links to cache
 	for link in soup.findAll('img'):
 		link['src'] = "/cache/"+subpath+"/"+link['src']
+	#redirect script links to cache
+	for link in soup.findAll('script'):
+		if 'src' in link:
+			link['src'] = "/cache/"+subpath+"/"+link['src']
 	#inject js up top in <head>
 	script = soup.new_tag("script")
 	with open("injected.js") as f:
@@ -27,8 +33,14 @@ def view_page(subpath):
 
 @app.route('/cache/<path:subpath>')
 def check_cache(subpath):
-	local_path = os.path.basename(subpath)
-	dlfile(subpath, local_path)
+	local_path = "cache/" + os.path.basename(subpath)
+	#useful later on
+	if not os.path.exists(local_path):
+		folders = "/".join(local_path.split("/")[:-1])
+		if not os.path.exists(folders):
+			os.makedirs(folders)
+		#download the file and serve
+		dlfile(subpath, local_path)
 	print "serving: " + local_path
 	return send_file(local_path)
 
