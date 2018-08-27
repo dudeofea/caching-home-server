@@ -1,6 +1,6 @@
 var domain = "https://www.google.com/";
 //For catching "new Image().src =" calls
-const NativeImage = Image;
+const NativeImage = window.Image;
 class FakeImage {
 	constructor(w, h) {
 		const nativeImage = new NativeImage(w, h);
@@ -9,7 +9,7 @@ class FakeImage {
 				if (prop === 'src') {
 					console.log('gotcha ' + value);
 				}
-				return nativeImage[prop] = "/cache/" + domain + value;
+				return nativeImage[prop] = cacheUrl(value);
 			},
 			get: function(target, prop) {
 				return target[prop];
@@ -40,6 +40,24 @@ document.addEventListener('DOMNodeInserted', function (event) {
 			s[attr] = el[attr];
 		}
 	}
-	s.src = "/cache/" + domain + s.src.replace(/.*\/\/[^\/]*/, '');
+	s.src = cacheUrl(s.src);
 	el.parentNode.replaceChild(s, el);
 });
+
+//function for changing the domain of something to our cache
+function cacheUrl(url){
+	//remove bogus shit
+	if(url === null || typeof url !== "string" || url === ""){
+		return;
+	}
+	//detect if url has a domain
+	var absolute;
+	if (url.match(/https?:\/\//g)) {
+		//TODO: detect if domain is domain of this page
+		absolute = url;
+	}else{
+		absolute = domain + url;
+	}
+	//remove extra slashes and return
+	return "/cache/" + absolute.replace(/([^:]\/)\/+/g, "$1");
+};

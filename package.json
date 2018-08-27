@@ -1,0 +1,15 @@
+{
+  "name": "caching-home-server",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "mocha tests.js --reporter dot",
+    "test-watch": "mocha test/js --reporter dot --watch"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "assert": "^1.4.1",
+    "mocha": "^5.2.0",
+    "mock-browser": "^0.92.14",
+    "rewire": "^4.0.1"
+  }
+}

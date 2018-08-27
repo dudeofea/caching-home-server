@@ -1,4 +1,4 @@
-from flask import Flask, send_file
+from flask import Flask, send_file, request
 from bs4 import BeautifulSoup
 import urllib2
 import re
@@ -12,7 +12,7 @@ def hello():
 
 @app.route('/view/<path:subpath>')
 def view_page(subpath):
-	response = urllib2.urlopen(subpath)
+	response = dlurl(subpath)
 	html = response.read()
 	#redirect css url() links to cache
 	html = re.sub(r'url\(([^\)]*)\)', lambda m: "url(/cache/" + str(subpath) + m.group(1) + ")", html)
@@ -39,15 +39,21 @@ def check_cache(subpath):
 		folders = "/".join(local_path.split("/")[:-1])
 		if not os.path.exists(folders):
 			os.makedirs(folders)
-		#download the file and serve
-		dlfile(subpath, local_path)
+	#download the file and serve
+	dlfile(subpath, local_path)
 	print "serving: " + local_path
 	return send_file(local_path)
 
 def dlfile(url, path):
 	# Open the url
-	f = urllib2.urlopen(url)
+	f = dlurl(url)
 	print "downloading " + url
 	# Open our local file for writing
 	with open(path, "wb") as local_file:
 		local_file.write(f.read())
+
+def dlurl(url):
+	ua = request.headers.get('User-Agent')
+	req = urllib2.build_opener()
+	req.addheaders = [('User-Agent', ua)]
+	return req.open(url)
