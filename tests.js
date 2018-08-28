@@ -29,9 +29,9 @@ describe('Tent Router', function() {
 		assert.equal("/cache/"+domain+"/hey", url);
 	});
 	it('[cacheUrl] Should remove additional slashes', function() {
-		var domain = setDomain("www.thisisthedomain.com/");
-		var url = cacheUrl("//hey");
-		assert.equal("/cache/www.thisisthedomain.com/hey", url);
+		var domain = setDomain("www.thisisthedomain.com//");
+		var url = cacheUrl("/hey//");
+		assert.equal("/cache/www.thisisthedomain.com/hey/", url);
 	});
 	it('[cacheUrl] Ignores bogus input arguments', function() {
 		assert.equal(null, cacheUrl(function(){ return ""; }));
@@ -46,6 +46,9 @@ describe('Tent Router', function() {
 		domain = "http://www.thisisthecorrectdomain.com";
 		url = cacheUrl(domain+"/hey");
 		assert.equal("/cache/"+domain+"/hey", url);
+		domain = "//www.thisisthecorrectdomain.com";
+		url = cacheUrl(domain+"/hey");
+		assert.equal("/cache/http://www.thisisthecorrectdomain.com/hey", url);
 		//except with localhost, we don't count that
 		url = cacheUrl("http://"+window.location.host+"/hey");
 		assert.equal("/cache/www.thisisthedomain.com/hey", url);

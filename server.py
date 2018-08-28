@@ -13,7 +13,7 @@ def hello():
 
 @app.route('/view/<path:subpath>')
 def view_page(subpath):
-	htmlfile, found = _check_cache(subpath, False)
+	htmlfile, found = _check_cache(subpath, True)
 	with open(htmlfile, 'r') as myfile:
 		html = myfile.read()
 	if found:
@@ -43,7 +43,7 @@ def view_page(subpath):
 	#inject js up top in <head>
 	script = soup.new_tag("script")
 	with open("injected.js") as f:
-		script.string = f.read()
+		script.string = f.read().replace("#!<DOMAIN>!#", subpath)
 	soup.head.insert(0, script)
 	#write file to cache
 	with open(htmlfile, 'w') as myfile:
@@ -58,14 +58,13 @@ def check_cache(subpath):
 def _check_cache(subpath, purge):
 	#parse the url
 	parsed = urlparse.urlparse(subpath)
-	print "subpath: ", parsed
 	if parsed.path != "/" and parsed.path != "":
 		local_path = "cache/" + parsed.netloc + parsed.path
 	else:
 		local_path = "cache/" + parsed.netloc + "/index"
 	#check if it's in the cache
 	found = True
-	if not os.path.exists(local_path):
+	if not os.path.exists(local_path) or purge:
 		folders = "/".join(local_path.split("/")[:-1])
 		if not os.path.exists(folders):
 			os.makedirs(folders)

@@ -1,4 +1,4 @@
-var domain = "https://www.google.com/";
+var domain = "#!<DOMAIN>!#";
 //For catching "new Image().src =" calls
 const NativeImage = Image;
 class FakeImage {
@@ -20,11 +20,14 @@ class FakeImage {
 }
 Image = FakeImage;
 
-//For catching js injected scripts
+// //For catching js injected scripts
 var createElement = document.createElement;
 document.createElement = function (tag) {
-	if (tag === 'script') {
+	if (tag.toLowerCase() === 'script') {
 		tag = 'custom:script';
+	}
+	if (tag.toLowerCase() === "img"){
+		return new Image();
 	}
 	return createElement.call(document, tag);
 };
@@ -33,6 +36,14 @@ document.addEventListener('DOMNodeInserted', function (event) {
 	if (el.nodeName !== 'CUSTOM:SCRIPT') {
 		return;
 	}
+	var src = el.src;
+	if(!el.src){
+		console.log("src null", el.attributes);
+		if(el.attributes && el.attributes.src){
+			src = el.attributes.src.nodeValue;
+		}
+	}
+	//console.log('gotcha ', el.outerHTML, src);
 	//create a new (real script) tag with a modified url
 	var s = createElement.call(document, "script");
 	for (var attr in el) {
@@ -40,15 +51,38 @@ document.addEventListener('DOMNodeInserted', function (event) {
 			s[attr] = el[attr];
 		}
 	}
-	s.src = cacheUrl(s.src);
+	s.src = cacheUrl(src);
+	//console.log('gotcha ', s.outerHTML, s.attributes);
 	el.parentNode.replaceChild(s, el);
 });
+
+//for catching XHR requests
+var oldXHR = window.XMLHttpRequest;
+function newXHR() {
+    var realXHR = new oldXHR();
+    realXHR.addEventListener("readystatechange", function() {
+		//console.log("xhr sent", realXHR);
+        if(realXHR.readyState==4 && realXHR.status==200){
+        }
+    }, false);
+	realXHR._open = realXHR.open;
+	realXHR.open = function(method, url, asyn, user, password){
+		console.log("mocking open", method, url);
+		return this._open(method, cacheUrl(url), asyn, user, password);
+	};
+    return realXHR;
+}
+window.XMLHttpRequest = newXHR;
 
 //function for changing the domain of something to our cache
 function cacheUrl(url){
 	//remove bogus shit
 	if(url === null || typeof url !== "string" || url === ""){
 		return;
+	}
+	//if url starts with //, replace with http://
+	if(url[0] == "/" && url[1] == "/"){
+		url = url.replace("//", "http://")
 	}
 	//remove local domain if we find one
 	var ind = url.indexOf(window.location.host);
