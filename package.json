@@ -2,7 +2,7 @@
   "name": "caching-home-server",
   "version": "1.0.0",
   "scripts": {
-    "test": "mocha tests.js --reporter dot",
+    "test": "python tests.py && mocha tests.js --reporter dot",
     "test-watch": "mocha test/js --reporter dot --watch"
   },
   "license": "ISC",
