@@ -1,5 +1,11 @@
 import unittest
+import docker
+import urllib2
+import time
+import json
 from tools import cacheUrl
+
+client = docker.from_env()
 
 class TestCacheUrl(unittest.TestCase):
 
@@ -30,6 +36,30 @@ class TestCacheUrl(unittest.TestCase):
 		good_domain = "//www.thisisthecorrectdomain.com";
 		url = cacheUrl(good_domain+"/hey", bad_domain);
 		self.assertEqual(url, "/cache/http://www.thisisthecorrectdomain.com/hey")
+
+class IntegrationTests(unittest.TestCase):
+	splash_container = None
+
+	@classmethod
+	def setUpClass(cls):
+		cls.splash_container = client.containers.run("scrapinghub/splash", detach=True, ports={'8050/tcp':8050, '5023/tcp':5023})
+		time.sleep(0.5)
+
+	@classmethod
+	def tearDownClass(cls):
+		print "hey", cls.splash_container
+		cls.splash_container.kill()
+
+	#Query Splash API for network requests
+	def render_har(self, args):
+		req = urllib2.build_opener()
+		response = req.open("http://localhost:8050/render.har?"+args)
+		return json.loads(response.read())
+
+	def test_some_thing(self):
+		har = self.render_har("url=https://www.google.com/")
+		for e in har['log']['entries']:
+			print(json.dumps(e['request']['url'], indent=4, sort_keys=True))
 
 if __name__ == '__main__':
 	unittest.main()

@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def hello():
-	return "Hello World!"
+	return "/view/*webpage*: view a website \n/cache/*webpage*: check the cache for that website"
 
 @app.route('/view/<path:subpath>')
 def view_page(subpath):
@@ -78,13 +78,16 @@ def _check_cache(subpath, purge):
 	local_path += args
 	#check if it's in the cache
 	found = True
-	if not os.path.exists(local_path) or purge:
-		folders = "/".join(local_path.split("/")[:-1])
-		if not os.path.exists(folders):
-			os.makedirs(folders)
-		#download the file and serve
-		dlfile(subpath+args, local_path)
-		found = False
+	try:
+		if not os.path.exists(local_path) or purge:
+			folders = "/".join(local_path.split("/")[:-1])
+			if not os.path.exists(folders):
+				os.makedirs(folders)
+			#download the file and serve
+			dlfile(subpath+args, local_path)
+			found = False
+	except urllib2.URLError:
+		print "Could not download file", subpath
 	print "serving: " + local_path
 	return local_path, found
 
